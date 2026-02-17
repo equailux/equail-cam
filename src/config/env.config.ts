@@ -12,6 +12,10 @@ const env = {
         url: process.env.API_URL,
         key: process.env.API_KEY,
     },
+    capture: {
+        interval: Number(process.env.CAPTURE_INTERVAL),
+        immediate: process.env.CAPTURE_IMMEDIATE == "true",
+    },
 }
 
 //

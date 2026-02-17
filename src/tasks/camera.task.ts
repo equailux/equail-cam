@@ -7,7 +7,8 @@ import type { FSWebcam, WindowsWebcam, ImageSnapWebcam } from "node-webcam"
 
 //
 
-const run = async (interval = 60000) => {
+const run = async (interval = 60000, immediate = true) => {
+    if (immediate) await loop(cameraModule.cameras).catch(console.error)
     setInterval(() => loop(cameraModule.cameras).catch(console.error), interval)
     console.info(`[Task.Camera]: Camera task running.`)
 }
