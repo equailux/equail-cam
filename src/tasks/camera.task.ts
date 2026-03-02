@@ -1,4 +1,5 @@
 import z from "zod"
+import fs from "fs/promises"
 import env from "@/config/env.config.js"
 import cameraModule from "@/modules/camera.module.js"
 import { CaptureSchema } from "@/schemas/capture.schema.js"
@@ -22,6 +23,7 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
         let timer = Date.now()
         const camname = `Camera${index + 1}`
         const buffer = await cameraModule.capture(camera).catch(console.error)
+        if (!buffer) console.error(`[Task.Camera]: ${camname} failed to capture.`)
         if (!buffer) continue
         
         console.info(`[Task.Camera]: ${camname} captured in ${Date.now() - timer}ms.`)
@@ -56,6 +58,7 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
             .then((res) => res.json())
             .then((res) => z.array(DetectionRawSchema).parse(res))
             .catch(console.error)
+        if (!res) console.error(`[Task.Camera]: ${camname} image detection failed.`)
         if (!res) continue
         console.info(`[Task.Camera]: ${camname} image found ${res.length} detections in ${Date.now() - timer}ms.`)
 

@@ -19,7 +19,7 @@ const options: WebcamOptions = {
 
 //
 
-const list = async (timeout = 30000) => {
+const list = async (timeout = 5000) => {
     const cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[] = []
     let listed = false
     
@@ -38,7 +38,7 @@ const list = async (timeout = 30000) => {
     return cameras
 }
 
-const capture = async (camera: FSWebcam | WindowsWebcam | ImageSnapWebcam, timeout = 30000) => {
+const capture = async (camera: FSWebcam | WindowsWebcam | ImageSnapWebcam, timeout = 5000) => {
     const path = "temp"
     await fs.rm(`${path}.jpg`).catch(() => 0)
     
