@@ -37,7 +37,7 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
         form.append("camera", `${camname}`)
 
         let headers: Record<string, any> = { "Authorization": `Bearer ${env.api.key}` }
-        let url = `${env.api.url}/api/capture`
+        let url = `${env.api.url}/esp/capture`
         let cid = 0
         
         await fetch(url, { body: form, method: "POST", headers })
@@ -65,7 +65,7 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
         // --- Send Detection
         timer = Date.now()
         headers = { "Content-Type": "application/json", "Authorization": `Bearer ${env.api.key}` }
-        url = `${env.api.url}/api/capture/${cid}/detection`
+        url = `${env.api.url}/esp/capture/${cid}/detection`
         const promises: Promise<any>[] = []
 
         for (const detection of res) {
