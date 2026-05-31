@@ -3,7 +3,7 @@ import fs from "fs/promises"
 import env from "@/config/env.config.js"
 import cameraModule from "@/modules/camera.module.js"
 import { CaptureSchema } from "@/schemas/capture.schema.js"
-import { DetectionRawSchema } from "@/schemas/detection.schema.js"
+import { DetectionRawSchema, DetectionSchema } from "@/schemas/detection.schema.js"
 import type { FSWebcam, WindowsWebcam, ImageSnapWebcam } from "node-webcam"
 
 //
@@ -47,7 +47,9 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
             .catch(console.error)
         console.info(`[Task.Camera]: ${camname} image sent in ${Date.now() - timer}ms.`)
 
-        // --- Request Detection
+        //
+
+        // --- Request Egg Detection
         timer = Date.now()
         form = new FormData()
         form.append("image", blob)
@@ -58,15 +60,15 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
             .then((res) => res.json())
             .then((res) => z.array(DetectionRawSchema).parse(res))
             .catch(console.error)
-        if (!res) console.error(`[Task.Camera]: ${camname} image detection failed.`)
+        if (!res) console.error(`[Task.Camera]: ${camname} image egg detection failed.`)
         if (!res) continue
-        console.info(`[Task.Camera]: ${camname} image found ${res.length} detections in ${Date.now() - timer}ms.`)
+        console.info(`[Task.Camera]: ${camname} image found ${res.length} egg detections in ${Date.now() - timer}ms.`)
 
-        // --- Send Detection
+        // --- Send Egg Detection
         timer = Date.now()
         headers = { "Content-Type": "application/json", "x-api-key": env.api.key }
         url = `${env.api.url}/esp/capture/${cid}/detection`
-        const promises: Promise<any>[] = []
+        let promises: Promise<any>[] = []
 
         for (const detection of res) {
             const options = { body: JSON.stringify(detection), method: "POST", headers }
@@ -75,7 +77,59 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
         }
 
         await Promise.all(promises).catch(console.error)
-        console.info(`[Task.Camera]: ${camname} image detections sent in ${Date.now() - timer}ms.`)
+        console.info(`[Task.Camera]: ${camname} image egg detections sent in ${Date.now() - timer}ms.`)
+        
+        //
+        
+        // --- Request Feed Detection
+        timer = Date.now()
+        form = new FormData()
+        form.append("image", blob)
+        headers = { "x-api-key": env.ai.api.key }
+        url = `${env.ai.api.url}/api/feed/predict`
+
+        res = await fetch(url, { body: form, method: "POST", headers })
+            .then((res) => res.json())
+            .then((res) => z.array(DetectionRawSchema).parse(res))
+            .catch(console.error)
+        if (!res) console.error(`[Task.Camera]: ${camname} image feed detection failed.`)
+        if (!res) continue
+        console.info(`[Task.Camera]: ${camname} image found ${res.length} feed detections in ${Date.now() - timer}ms.`)
+
+        // --- Send Feed Detection
+        timer = Date.now()
+        headers = { "Content-Type": "application/json", "x-api-key": env.api.key }
+        url = `${env.api.url}/esp/capture/${cid}/detection`
+        promises = []
+        
+        const detections: DetectionSchema[] = []
+        for (const detection of res) {
+            const options = { body: JSON.stringify(detection), method: "POST", headers }
+            const promise = fetch(url, options)
+                .then(res => res.json())
+                .then(res => detections.push(res as DetectionSchema))
+                .catch(console.error)
+            promises.push(promise)
+        }
+
+        await Promise.all(promises).catch(console.error)
+        console.info(`[Task.Camera]: ${camname} image feed detections sent in ${Date.now() - timer}ms.`)
+
+        // --- Send Feed Level
+        timer = Date.now()
+        headers = { "Content-Type": "application/json", "x-api-key": env.api.key }
+        promises = []
+
+        for (const detection of detections) {
+            const options = { body: JSON.stringify({ level: Number(detection.class), detectionId: detection.id }), method: "POST", headers }
+            url = `${env.api.url}/api/feed`
+            const promise = fetch(url, options).catch(console.error)
+            promises.push(promise)
+        }
+
+        await Promise.all(promises).catch(console.error)
+        console.info(`[Task.Camera]: ${camname} image feed levels sent in ${Date.now() - timer}ms.`)
+
     }
 }
 
