@@ -3,6 +3,7 @@ import { z } from "zod";
 //
 
 const DetectionSchema = z.object({
+    id: z.number(),
     box: z.object({
         x: z.coerce.number(),
         y: z.coerce.number(),
@@ -15,7 +16,7 @@ const DetectionSchema = z.object({
     updatedAt: z.coerce.date(),
 })
 
-const DetectionRawSchema = DetectionSchema.omit({ createdAt: true, updatedAt: true })
+const DetectionRawSchema = DetectionSchema.omit({ id: true, createdAt: true, updatedAt: true })
 
 //
 
