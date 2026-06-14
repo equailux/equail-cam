@@ -122,7 +122,7 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
 
         for (const detection of detections) {
             const options = { body: JSON.stringify({ level: Number(detection.class), detectionId: detection.id }), method: "POST", headers }
-            url = `${env.api.url}/api/feed`
+            url = `${env.api.url}/esp/feed`
             const promise = fetch(url, options).catch(console.error)
             promises.push(promise)
         }
