@@ -1,4 +1,3 @@
-
 //
 
 const env = {
@@ -11,6 +10,9 @@ const env = {
     api: {
         url: process.env.API_URL,
         key: process.env.API_KEY,
+    },
+    ws: {
+        reconnect: Number(process.env.WS_RECONNECT || 5000),
     },
     capture: {
         interval: Number(process.env.CAPTURE_INTERVAL),

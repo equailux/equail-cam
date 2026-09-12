@@ -8,10 +8,37 @@ import type { FSWebcam, WindowsWebcam, ImageSnapWebcam } from "node-webcam"
 
 //
 
+let timer: NodeJS.Timeout | undefined = undefined
+let capturing = false
+
+//
+
 const run = async (interval = 60000, immediate = true) => {
-    if (immediate) await loop(cameraModule.cameras).catch(console.error)
-    setInterval(() => loop(cameraModule.cameras).catch(console.error), interval)
+    if (immediate) await trigger()
+    schedule(interval, true)
     console.info(`[Task.Camera]: Camera task running.`)
+}
+
+/** Runs a single capture pass, skipping the request when one is still in flight. */
+const trigger = async () => {
+    if (capturing) return console.info(`[Task.Camera]: Capture skipped, one is already running.`)
+
+    capturing = true
+    await loop(cameraModule.cameras)
+        .catch(console.error)
+        .finally(() => capturing = false)
+}
+
+/** Replaces the recurring capture schedule, clearing it entirely when disabled. */
+const schedule = (interval: number, enabled = true) => {
+    if (timer) clearInterval(timer)
+    timer = undefined
+
+    if (!enabled) return console.info(`[Task.Camera]: Scheduled capture disabled.`)
+    if (!Number.isFinite(interval) || interval <= 0) return console.info(`[Task.Camera]: Invalid interval ${interval}ms ignored.`)
+
+    timer = setInterval(() => trigger(), interval)
+    console.info(`[Task.Camera]: Scheduled capture every ${interval}ms.`)
 }
 
 //
@@ -135,4 +162,4 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
 
 //
 
-export default { run, loop }
+export default { run, loop, trigger, schedule }
