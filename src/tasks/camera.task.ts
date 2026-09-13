@@ -111,7 +111,9 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
         // --- Request Feed Detection
         timer = Date.now()
         form = new FormData()
-        form.append("image", blob)
+        form.append("score", `${env.ai.feed.score}`)
+        form.append("iou", `${env.ai.feed.iou}`)
+        form.append("image", blob, `${Date.now()}.jpg`)
         headers = { "x-api-key": env.ai.api.key }
         url = `${env.ai.api.url}/api/feed/predict`
 
@@ -121,7 +123,7 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
             .catch(console.error)
         if (!res) console.error(`[Task.Camera]: ${camname} image feed detection failed.`)
         if (!res) continue
-        console.info(`[Task.Camera]: ${camname} image found ${res.length} feed detections in ${Date.now() - timer}ms.`)
+        console.info(`[Task.Camera]: ${camname} image found ${res.length} feed detections at score ${env.ai.feed.score}, iou ${env.ai.feed.iou} in ${Date.now() - timer}ms.`)
 
         // --- Send Feed Detection
         timer = Date.now()
