@@ -8,6 +8,14 @@ const threshold = (value: string | undefined, fallback: number) => {
     return Number.isFinite(parsed) ? parsed : fallback
 }
 
+/** Parses an image size, falling back when unset or unparseable, where 0 disables resizing. */
+const imgsz = (value: string | undefined, fallback: number) => {
+    if (!value?.trim()) return fallback
+
+    const parsed = Number(value)
+    return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback
+}
+
 //
 
 const env = {
@@ -16,7 +24,11 @@ const env = {
             url: process.env.AI_API_URL,
             key: process.env.AI_API_KEY,
         },
+        egg: {
+            imgsz: imgsz(process.env.EGG_IMGSZ, 256),
+        },
         feed: {
+            imgsz: imgsz(process.env.FEED_IMGSZ, 256),
             score: threshold(process.env.FEED_SCORE, 0.25),
             iou: threshold(process.env.FEED_IOU, 0.5),
         },
