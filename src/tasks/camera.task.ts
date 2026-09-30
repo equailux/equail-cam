@@ -2,6 +2,7 @@ import z from "zod"
 import fs from "fs/promises"
 import env from "@/config/env.config.js"
 import cameraModule from "@/modules/camera.module.js"
+import imageModule from "@/modules/image.module.js"
 import { CaptureSchema } from "@/schemas/capture.schema.js"
 import { DetectionRawSchema, DetectionSchema } from "@/schemas/detection.schema.js"
 import type { FSWebcam, WindowsWebcam, ImageSnapWebcam } from "node-webcam"
@@ -54,8 +55,7 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
         if (!buffer) continue
         
         console.info(`[Task.Camera]: ${camname} captured in ${Date.now() - timer}ms.`)
-        const uint8 = new Uint8Array(buffer)
-        const blob = new Blob([uint8], { type: "image/jpeg" })
+        const blob = imageModule.blob(buffer)
 
         // --- Send Capture
         timer = Date.now()
@@ -76,10 +76,17 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
 
         //
 
+        // --- Resize Egg Image
+        timer = Date.now()
+        const egg = await imageModule.resize(buffer, env.ai.egg.imgsz).catch(console.error)
+        if (!egg) console.error(`[Task.Camera]: ${camname} image egg resize failed.`)
+        if (!egg) continue
+        console.info(`[Task.Camera]: ${camname} image resized for egg from ${buffer.length} to ${egg.length} bytes in ${Date.now() - timer}ms.`)
+
         // --- Request Egg Detection
         timer = Date.now()
         form = new FormData()
-        form.append("image", blob)
+        form.append("image", imageModule.blob(egg), `${Date.now()}.jpg`)
         headers = { "x-api-key": env.ai.api.key }
         url = `${env.ai.api.url}/api/egg/predict`
 
@@ -108,12 +115,19 @@ const loop = async (cameras: (FSWebcam | WindowsWebcam | ImageSnapWebcam)[]) => 
         
         //
         
+        // --- Resize Feed Image
+        timer = Date.now()
+        const feed = await imageModule.resize(buffer, env.ai.feed.imgsz).catch(console.error)
+        if (!feed) console.error(`[Task.Camera]: ${camname} image feed resize failed.`)
+        if (!feed) continue
+        console.info(`[Task.Camera]: ${camname} image resized for feed from ${buffer.length} to ${feed.length} bytes in ${Date.now() - timer}ms.`)
+
         // --- Request Feed Detection
         timer = Date.now()
         form = new FormData()
         form.append("score", `${env.ai.feed.score}`)
         form.append("iou", `${env.ai.feed.iou}`)
-        form.append("image", blob, `${Date.now()}.jpg`)
+        form.append("image", imageModule.blob(feed), `${Date.now()}.jpg`)
         headers = { "x-api-key": env.ai.api.key }
         url = `${env.ai.api.url}/api/feed/predict`
 
